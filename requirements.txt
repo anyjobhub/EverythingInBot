@@ -1,5 +1,6 @@
 # EverythingInBot Requirements
 # Python 3.11+
+# Updated: Removed Celery, Free Tier Compatible
 
 # ============================================
 # CORE FRAMEWORKS
@@ -20,16 +21,8 @@ python-multipart==0.0.20
 motor==3.6.0
 pymongo==4.10.1
 
-# Redis
+# Redis (optional for FSM, can use in-memory)
 redis==5.2.1
-aioredis==2.0.1
-
-# ============================================
-# TASK QUEUE
-# ============================================
-# Celery
-celery==5.4.0
-kombu==5.4.2
 
 # ============================================
 # AI & ML SERVICES
@@ -149,7 +142,7 @@ forex-python==1.8
 markdown==3.7
 
 # ============================================
-# RSS & WEB SCRAPING (NEW - for automated fetching)
+# RSS & WEB SCRAPING (for automated fetching)
 # ============================================
 # RSS/XML Parsing
 feedparser==6.0.10

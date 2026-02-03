@@ -63,6 +63,20 @@ async def lifespan(app: FastAPI):
         bot_info = await bot.get_me()
         logger.info(f"✅ Bot started: @{bot_info.username}")
         
+        # Start background scheduler
+        from app.scheduler import scheduler
+        from app.tasks import run_job_fetcher, run_course_fetcher, run_cleanup
+        
+        # Schedule tasks
+        scheduler.add_task(run_job_fetcher, interval_hours=6, name="Job Fetcher")
+        scheduler.add_task(run_course_fetcher, interval_hours=6, name="Course Fetcher")
+        scheduler.add_task(run_cleanup, interval_hours=24, name="Cleanup")
+        
+        # Start scheduler in background
+        import asyncio
+        asyncio.create_task(scheduler.run())
+        logger.info("✅ Background scheduler started")
+        
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
         raise
@@ -73,6 +87,10 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Shutting down EverythingInBot...")
     
     try:
+        # Stop scheduler
+        from app.scheduler import scheduler
+        scheduler.stop()
+        
         # Delete webhook
         await bot.delete_webhook(drop_pending_updates=True)
         
