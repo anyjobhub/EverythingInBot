@@ -19,7 +19,7 @@ python-multipart==0.0.20
 # ============================================
 # MongoDB Async Driver
 motor==3.6.0
-pymongo==4.10.1
+pymongo==4.9.1  # Compatible with motor 3.6.0 (requires <4.10)
 
 # Redis (optional for FSM, can use in-memory)
 redis==5.2.1
