@@ -30,6 +30,13 @@ async def cmd_start(message: Message):
     Handle /start command with comprehensive logging
     Display main menu with all 10 modules
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info("🔥 START HANDLER TRIGGERED!")
+    logger.info(f"User: {message.from_user.id} (@{message.from_user.username})")
+    logger.info(f"Message text: {message.text}")
+    
     user_id = message.from_user.id
     username = message.from_user.username or "User"
     first_name = message.from_user.first_name or "Unknown"
@@ -86,10 +93,12 @@ I'm your all-in-one Telegram Super-App with <b>10 powerful modules</b>:
 Choose a module below to get started! 👇
 """
     
+    logger.info("✅ Sending welcome message...")
     await message.answer(
         welcome_text,
         reply_markup=get_main_menu_keyboard()
     )
+    logger.info("✅ Welcome message sent successfully!")
 
 
 @router.callback_query(F.data == "main_menu")

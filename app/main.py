@@ -159,6 +159,8 @@ async def webhook_handler(request: Request, token: str) -> Response:
     Telegram Webhook Handler
     This endpoint receives updates from Telegram
     """
+    logger.info("🔔 Webhook request received")
+    
     # Verify token
     if token != settings.TELEGRAM_BOT_TOKEN:
         logger.warning(f"❌ Invalid webhook token received")
@@ -173,10 +175,21 @@ async def webhook_handler(request: Request, token: str) -> Response:
     # Process update
     try:
         update_data = await request.json()
+        logger.info(f"📨 Incoming update: {update_data.get('update_id', 'unknown')}")
+        
+        # Log update type
+        if 'message' in update_data:
+            msg = update_data['message']
+            logger.info(f"💬 Message from user {msg.get('from', {}).get('id')}: {msg.get('text', 'no text')}")
+        elif 'callback_query' in update_data:
+            cb = update_data['callback_query']
+            logger.info(f"🔘 Callback from user {cb.get('from', {}).get('id')}: {cb.get('data', 'no data')}")
+        
         await dp.feed_webhook_update(bot, update_data)
+        logger.info("✅ Update processed successfully")
         return Response(status_code=200)
     except Exception as e:
-        logger.error(f"❌ Webhook processing error: {e}")
+        logger.error(f"❌ Webhook processing error: {e}", exc_info=True)
         return Response(status_code=500)
 
 
