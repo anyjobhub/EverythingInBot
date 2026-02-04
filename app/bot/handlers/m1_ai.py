@@ -11,7 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton
 
 from app.bot.keyboards.main_menu import get_back_to_menu_button
-from worker.tasks import generate_ai_response, generate_image
+from app.tasks.ai_tasks import generate_ai_response, generate_image
 from app.database import Database
 from app.utils.logger import log_button_click, log_search, log_action
 

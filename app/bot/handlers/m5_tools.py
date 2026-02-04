@@ -11,7 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton
 
 from app.bot.keyboards.main_menu import get_back_to_menu_button
-from worker.tasks import merge_pdfs, compress_pdf, ocr_pdf
+from app.tasks.pdf_tasks import merge_pdfs, compress_pdf, ocr_pdf
 
 router = Router(name="m5_tools")
 
@@ -126,9 +126,9 @@ async def process_pdf(message: Message, state: FSMContext):
     file_path = f"/tmp/{document.file_name}"
     await message.bot.download_file(file.file_path, file_path)
     
-    # Call Celery task
+    # Process PDF
     if operation == "compress":
-        result = compress_pdf.delay(file_path)
+        result = await compress_pdf(file_path, user_id=message.from_user.id)
     
     # Placeholder response
     response = f"""
