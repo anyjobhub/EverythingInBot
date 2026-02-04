@@ -1,16 +1,16 @@
 """
-Main Application Entry Point
-FastAPI + Aiogram 3.x (Webhook Mode)
-Optimized for Render.com Deployment
+EverythingInBot - Main Application Entry Point
+FastAPI + Aiogram 3.x Telegram Bot
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
