@@ -1,10 +1,11 @@
 """
 Input Validation Middleware
 Sanitize and validate all user inputs to prevent injection attacks
+IMPORTANT: Aiogram 3 objects are IMMUTABLE - never modify event fields directly
 """
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, TelegramObject
 from typing import Callable, Dict, Any, Awaitable
 import re
 import html
@@ -17,6 +18,9 @@ class InputValidationMiddleware(BaseMiddleware):
     """
     Middleware to validate and sanitize user inputs
     Prevents XSS, injection attacks, and malformed data
+    
+    CRITICAL: Does NOT mutate frozen Aiogram objects
+    Stores sanitized data in the data dict instead
     """
     
     def __init__(self, max_length: int = 1000):
@@ -31,24 +35,25 @@ class InputValidationMiddleware(BaseMiddleware):
     
     async def __call__(
         self,
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        event: Message | CallbackQuery,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: Dict[str, Any]
     ) -> Any:
-        """Process and validate input"""
+        """Process and validate input WITHOUT mutating event"""
         
         # Validate Message
         if isinstance(event, Message):
             if event.text:
-                # Sanitize text
-                original_text = event.text
-                event.text = self.sanitize_text(event.text)
+                # Sanitize text and store in data dict (DO NOT mutate event.text)
+                sanitized = self.sanitize_text(event.text)
+                data["sanitized_text"] = sanitized
+                data["original_text"] = event.text
                 
                 # Log if text was modified
-                if original_text != event.text:
+                if event.text != sanitized:
                     logger.warning(
                         f"Sanitized input from user {event.from_user.id}: "
-                        f"{original_text[:50]}... -> {event.text[:50]}..."
+                        f"{event.text[:50]}... -> {sanitized[:50]}..."
                     )
                 
                 # Validate length
@@ -60,12 +65,16 @@ class InputValidationMiddleware(BaseMiddleware):
             
             # Validate caption
             if event.caption:
-                event.caption = self.sanitize_text(event.caption)
+                sanitized_caption = self.sanitize_text(event.caption)
+                data["sanitized_caption"] = sanitized_caption
+                data["original_caption"] = event.caption
         
         # Validate CallbackQuery data
         elif isinstance(event, CallbackQuery):
             if event.data:
-                event.data = self.sanitize_callback_data(event.data)
+                sanitized_data = self.sanitize_callback_data(event.data)
+                data["sanitized_callback_data"] = sanitized_data
+                data["original_callback_data"] = event.data
         
         # Continue processing
         return await handler(event, data)
