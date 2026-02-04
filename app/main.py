@@ -122,10 +122,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# IP Tracking middleware for logging system
-from app.middlewares.ip_tracking import IPTrackingMiddleware
-app.add_middleware(IPTrackingMiddleware)
-
 
 
 # ============================================

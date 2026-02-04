@@ -1,46 +1,62 @@
 """
-IP Tracking Middleware for FastAPI
-Captures client IP address and User-Agent from request headers
+IP Tracking Middleware for Aiogram 3.x
+Tracks user interactions for logging purposes
 """
 
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Callable
+from aiogram import BaseMiddleware
+from aiogram.types import Message, CallbackQuery, TelegramObject
+from typing import Callable, Dict, Any, Awaitable
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class IPTrackingMiddleware(BaseHTTPMiddleware):
+class IPTrackingMiddleware(BaseMiddleware):
     """
-    Middleware to extract and store IP address and User-Agent
-    from incoming requests for logging purposes
+    Aiogram middleware to track user information
+    Note: Telegram API doesn't provide IP addresses, so we track user_id instead
     """
     
-    async def dispatch(self, request: Request, call_next: Callable):
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any]
+    ) -> Any:
         """
-        Process request and extract tracking information
+        Process update and extract user information
         """
         try:
-            # Get real IP address (check X-Forwarded-For first, then X-Real-IP, then direct)
-            ip_address = (
-                request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                or request.headers.get("X-Real-IP", "").strip()
-                or request.client.host if request.client else "unknown"
-            )
+            # Extract user information from event
+            user = None
+            chat = None
             
-            # Get User-Agent
-            user_agent = request.headers.get("User-Agent", "unknown")
+            if isinstance(event, Message):
+                user = event.from_user
+                chat = event.chat
+            elif isinstance(event, CallbackQuery):
+                user = event.from_user
+                chat = event.message.chat if event.message else None
             
-            # Store in request state for handlers to access
-            request.state.ip_address = ip_address
-            request.state.user_agent = user_agent
+            # Store user information in data for handlers to access
+            if user:
+                data["user_id"] = user.id
+                data["username"] = user.username or "unknown"
+                data["first_name"] = user.first_name or "unknown"
+                data["language_code"] = user.language_code or "unknown"
+            
+            if chat:
+                data["chat_id"] = chat.id
+                data["chat_type"] = chat.type
+            
+            # Note: IP address is not available from Telegram API
+            # Telegram servers act as proxy, so we can't get real user IP
+            data["ip_address"] = None
             
         except Exception as e:
             logger.error(f"Error in IP tracking middleware: {str(e)}")
-            request.state.ip_address = "unknown"
-            request.state.user_agent = "unknown"
+            data["user_id"] = None
+            data["username"] = "unknown"
         
-        # Continue processing request
-        response = await call_next(request)
-        return response
+        # Continue processing
+        return await handler(event, data)
