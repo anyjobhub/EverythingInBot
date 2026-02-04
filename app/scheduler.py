@@ -48,8 +48,8 @@ class BackgroundScheduler:
                     )
                     
                     if should_run:
+                        logger.info(f"▶️  Running task: {task['name']}")
                         try:
-                            logger.info(f"▶️  Running task: {task['name']}")
                             await task['func']()
                             task['last_run'] = current_time
                             logger.info(f"✅ Task completed: {task['name']}")
@@ -59,8 +59,6 @@ class BackgroundScheduler:
                 # Sleep for 1 minute before checking again
                 await asyncio.sleep(60)
                 
-            except Exception as e:
-                logger.error(f"❌ Scheduler error: {e}")
                 await asyncio.sleep(60)
     
     def stop(self):
