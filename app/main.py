@@ -129,10 +129,13 @@ app.add_middleware(
 # ============================================
 
 @app.get("/uptime")
+@app.head("/uptime")
 async def uptime_check():
     """
     UptimeRobot heartbeat endpoint
     Keeps Render.com dyno awake by pinging every 5 minutes
+    
+    Supports both GET and HEAD methods (UptimeRobot uses HEAD)
     
     Returns:
         Status and timestamp
