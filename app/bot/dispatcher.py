@@ -45,12 +45,8 @@ def get_dispatcher() -> Dispatcher:
     logger.info("✅ Input Validation middleware registered")
     
     # 3. Spam Protection (detect abuse)
-    spam_protection = SpamProtectionMiddleware(
-        flood_threshold=5,      # 5 messages
-        flood_window=5,         # in 5 seconds
-        duplicate_threshold=3,  # 3 duplicate messages
-        ban_duration=3600       # 1 hour ban
-    )
+    # New spam middleware with no parameters - silent 5-minute blocking
+    spam_protection = SpamProtectionMiddleware()
     dp.message.middleware(spam_protection)
     logger.info("✅ Spam Protection middleware registered")
     
