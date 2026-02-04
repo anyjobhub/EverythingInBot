@@ -98,8 +98,6 @@ async def delayed_scheduler_start():
     Start scheduler after 10 second delay
     This prevents startup load crashes and ensures webhook is ready
     """
-    import asyncio
-    logger.info("⏱ Waiting 10 seconds before starting scheduler...")
     await asyncio.sleep(10)
     
     logger.info("🔄 Starting background scheduler...")
@@ -111,8 +109,8 @@ async def delayed_scheduler_start():
     scheduler.add_task(run_course_fetcher, interval_hours=6, name="Course Fetcher")
     scheduler.add_task(run_cleanup, interval_hours=24, name="Cleanup")
     
-    # Start scheduler in background
-    await scheduler.run()
+    # Start scheduler in background (don't await - let it run forever)
+    asyncio.create_task(scheduler.run())
     logger.info("✅ Background scheduler started")
 
 
