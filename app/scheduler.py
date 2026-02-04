@@ -52,7 +52,7 @@ class BackgroundScheduler:
                         try:
                             await task['func']()
                             task['last_run'] = current_time
-                            logger.info(f"✅ Task completed: {task['name']}\"")
+                            logger.info(f"✅ Task completed: {task['name']}")
                         except Exception as e:
                             logger.error(f"❌ Task failed: {task['name']} - {e}")
                 
