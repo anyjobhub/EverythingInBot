@@ -13,8 +13,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
 
 from app.config import settings, get_webhook_url
 from app.database import Database
@@ -29,14 +27,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Bot instance
+# Initialize bot
 bot = Bot(
     token=settings.TELEGRAM_BOT_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 
-# Dispatcher instance
-dp: Dispatcher = get_dispatcher()
+# Get dispatcher
+dp = get_dispatcher()
 
 
 @asynccontextmanager
