@@ -50,7 +50,7 @@ pdfplumber==0.11.4
 
 # OCR
 pytesseract==0.3.13
-Pillow==11.0.0
+Pillow>=12.1.0,<13.0.0  # Compatible with rembg 2.0.72 (requires >=12.1.0)
 
 # ============================================
 # IMAGE PROCESSING
