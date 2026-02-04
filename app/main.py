@@ -63,19 +63,9 @@ async def lifespan(app: FastAPI):
         bot_info = await bot.get_me()
         logger.info(f"✅ Bot started: @{bot_info.username}")
         
-        # Start background scheduler
-        from app.scheduler import scheduler
-        from app.tasks import run_job_fetcher, run_course_fetcher, run_cleanup
-        
-        # Schedule tasks
-        scheduler.add_task(run_job_fetcher, interval_hours=6, name="Job Fetcher")
-        scheduler.add_task(run_course_fetcher, interval_hours=6, name="Course Fetcher")
-        scheduler.add_task(run_cleanup, interval_hours=24, name="Cleanup")
-        
-        # Start scheduler in background
-        import asyncio
-        asyncio.create_task(scheduler.run())
-        logger.info("✅ Background scheduler started")
+        # Start background scheduler AFTER webhook is ready (delayed)
+        logger.info("⏳ Scheduling background tasks (delayed start)...")
+        asyncio.create_task(delayed_scheduler_start())
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
@@ -103,6 +93,29 @@ async def lifespan(app: FastAPI):
         
     except Exception as e:
         logger.error(f"❌ Shutdown error: {e}")
+
+
+async def delayed_scheduler_start():
+    """
+    Start scheduler after 10 second delay
+    This prevents startup load crashes and ensures webhook is ready
+    """
+    import asyncio
+    logger.info("⏱ Waiting 10 seconds before starting scheduler...")
+    await asyncio.sleep(10)
+    
+    logger.info("🔄 Starting background scheduler...")
+    from app.scheduler import scheduler
+    from app.tasks import run_job_fetcher, run_course_fetcher, run_cleanup
+    
+    # Schedule tasks
+    scheduler.add_task(run_job_fetcher, interval_hours=6, name="Job Fetcher")
+    scheduler.add_task(run_course_fetcher, interval_hours=6, name="Course Fetcher")
+    scheduler.add_task(run_cleanup, interval_hours=24, name="Cleanup")
+    
+    # Start scheduler in background
+    await scheduler.run()
+    logger.info("✅ Background scheduler started")
 
 
 # Create FastAPI app
@@ -157,40 +170,63 @@ async def uptime_check():
 async def webhook_handler(request: Request, token: str) -> Response:
     """
     Telegram Webhook Handler
-    This endpoint receives updates from Telegram
+    CRITICAL: Returns instantly (<1ms) to prevent Render timeout/restart
+    Update processing happens in background task
     """
-    logger.info("🔔 Webhook request received")
-    
-    # Verify token
+    # Verify token (fast check)
     if token != settings.TELEGRAM_BOT_TOKEN:
-        logger.warning(f"❌ Invalid webhook token received")
+        logger.warning("❌ Invalid webhook token")
         return Response(status_code=403)
     
-    # Verify secret token
+    # Verify secret token (fast check)
     secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
     if secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
-        logger.warning(f"❌ Invalid secret token")
+        logger.warning("❌ Invalid secret token")
         return Response(status_code=403)
     
-    # Process update
+    # Get update data
     try:
         update_data = await request.json()
-        logger.info(f"📨 Incoming update: {update_data.get('update_id', 'unknown')}")
-        
+    except Exception as e:
+        logger.warning(f"⚠️ Malformed update: {e}")
+        return Response(status_code=200)  # Return 200 to prevent retries
+    
+    # Log incoming update (minimal logging)
+    update_id = update_data.get('update_id', 'unknown')
+    logger.info(f"📨 Update {update_id} received")
+    
+    # Process update in background (NON-BLOCKING)
+    # This is CRITICAL - webhook returns instantly
+    asyncio.create_task(process_update(update_data))
+    
+    # Return 200 immediately (<1ms)
+    return Response(status_code=200)
+
+
+async def process_update(update_data: dict):
+    """
+    Process Telegram update in background
+    This runs asynchronously and never blocks the webhook
+    """
+    try:
         # Log update type
         if 'message' in update_data:
             msg = update_data['message']
-            logger.info(f"💬 Message from user {msg.get('from', {}).get('id')}: {msg.get('text', 'no text')}")
+            user_id = msg.get('from', {}).get('id', 'unknown')
+            text = msg.get('text', 'no text')
+            logger.info(f"💬 Message from {user_id}: {text[:50]}")
         elif 'callback_query' in update_data:
             cb = update_data['callback_query']
-            logger.info(f"🔘 Callback from user {cb.get('from', {}).get('id')}: {cb.get('data', 'no data')}")
+            user_id = cb.get('from', {}).get('id', 'unknown')
+            data = cb.get('data', 'no data')
+            logger.info(f"🔘 Callback from {user_id}: {data}")
         
+        # Feed to dispatcher
         await dp.feed_webhook_update(bot, update_data)
-        logger.info("✅ Update processed successfully")
-        return Response(status_code=200)
+        logger.info("✅ Update processed")
+        
     except Exception as e:
-        logger.error(f"❌ Webhook processing error: {e}", exc_info=True)
-        return Response(status_code=500)
+        logger.error(f"❌ Update processing error: {e}", exc_info=False)  # No stack trace spam
 
 
 # ============================================
