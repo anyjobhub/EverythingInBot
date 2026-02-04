@@ -132,9 +132,6 @@ python-magic==0.4.27
 # Audio Processing
 pydub==0.25.1
 
-# Video Processing (lightweight)
-moviepy==2.1.1
-
 # Currency Conversion
 forex-python==1.8
 
