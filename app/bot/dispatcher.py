@@ -61,12 +61,13 @@ def get_dispatcher() -> Dispatcher:
     # Register routers (handlers)
     from app.bot.handlers import (
         start, m1_ai, m2_breach, m3_courses, m4_jobs, m5_tools,
-        m6_productivity, m7_devtools, m8_cybersec, m9_osint, m10_fun, admin
+        m6_productivity, m7_devtools, m8_cybersec, m9_osint, m10_fun, admin, admin_search
     )
     
     # Register all routers
     dp.include_router(start.router)
     dp.include_router(admin.router)  # Admin commands
+    dp.include_router(admin_search.router)  # Admin search logs
     dp.include_router(m1_ai.router)
     dp.include_router(m2_breach.router)
     dp.include_router(m3_courses.router)

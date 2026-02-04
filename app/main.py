@@ -125,6 +125,28 @@ app.add_middleware(
 
 
 # ============================================
+# UPTIMEROBOT HEARTBEAT ENDPOINT
+# ============================================
+
+@app.get("/uptime")
+async def uptime_check():
+    """
+    UptimeRobot heartbeat endpoint
+    Keeps Render.com dyno awake by pinging every 5 minutes
+    
+    Returns:
+        Status and timestamp
+    """
+    from datetime import datetime
+    return {
+        "status": "alive",
+        "service": "EverythingInBot",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
+    }
+
+
+# ============================================
 # WEBHOOK ENDPOINT
 # ============================================
 
